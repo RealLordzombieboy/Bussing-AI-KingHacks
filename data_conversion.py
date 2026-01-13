@@ -5,4 +5,7 @@ feed = gtfs_realtime_pb2.FeedMessage()
 
 def get_current_data():
     response = requests.get("https://api.cityofkingston.ca/gtfs-realtime/vehicleupdates.pb")
-    return feed.ParseFromString(response.content)
+    feed.ParseFromString(response.content)
+    return feed.entity
+
+# print(get_current_data()) # DEBUG
