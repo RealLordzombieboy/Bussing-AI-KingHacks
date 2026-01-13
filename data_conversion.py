@@ -2,8 +2,6 @@ from google.transit import gtfs_realtime_pb2
 import requests
 
 import csv
-import io
-from google.protobuf.json_format import MessageToDict
 
 feed = gtfs_realtime_pb2.FeedMessage()
 
@@ -12,34 +10,20 @@ def get_current_data():
     feed.ParseFromString(response.content)
     return feed.entity
 
-#print(get_current_data()) # DEBUG
-
-def proto_to_csv_string(repeated_container):
-    """Converts a RepeatedCompositeContainer to a CSV string."""
-    if not repeated_container:
-        return ""
-
-    # 1. Convert each proto message in the container to a Python dictionary
-    #    The container is iterable.
-    list_of_dicts = [MessageToDict(msg, preserving_proto_field_name=True) for msg in repeated_container]
-
-    # Handle the case where the messages have different fields (not ideal for CSV)
-    # For a simple, consistent schema:
-    # 2. Extract field names (headers) from the first dictionary
-    headers = list_of_dicts[0].keys()
-
-    # 3. Write to a CSV format in memory using the `csv` module
-    output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=headers)
-
-    writer.writeheader()
-    writer.writerows(list_of_dicts)
-
-    return output.getvalue()
-
-def get_current_csv():
-    csv_text = proto_to_csv_string(get_current_data())
+def proto_to_csv_string(current_data):
+    csv_dict = [["entity_id","vehicle_id","trip_id","route_id","direction_id","timestamp","lat","lon","speed_mps","bearing","stop_id","current_status"]]
+    for entity in current_data:
+        # If the bus is on a route.
+        print(entity)
+        if (entity.vehicle.HasField("trip")):
+            row = [f"{entity.vehicle.trip.trip_id}", f"{entity.vehicle.trip.route_id}", f"{entity.vehicle.stop_id}", f"{entity.vehicle.position.speed}", f"{entity.vehicle.trip.start_time}", f"{entity.vehicle.vehicle.id}"]
+            
+            csv_dict.append(row)
+    print(csv_dict)
 
     with open('current_data.csv', 'w') as f:
         writer = csv.writer(f)
-        writer.writerows(csv_text)
+        writer.writerows(csv_dict)
+
+#print(get_current_data()) # DEBUG
+#print(proto_to_csv_string(get_current_data())) # DEBUG
