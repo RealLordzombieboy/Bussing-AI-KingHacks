@@ -10,7 +10,7 @@ def get_current_data():
     feed.ParseFromString(response.content)
     return feed.entity
 
-def proto_to_csv_string(current_data):
+def proto_to_csv_string(current_data=get_current_data):
     csv_dict = [["trip_id", "route_id", "stop_id", "speed_mps", "feed_timestamp", "vehicle_id"]]
     for entity in current_data:
         # If the bus is on a route.
@@ -26,4 +26,4 @@ def proto_to_csv_string(current_data):
         writer.writerows(csv_dict)
 
 #print(get_current_data()) # DEBUG
-#print(proto_to_csv_string(get_current_data())) # DEBUG
+print(proto_to_csv_string(get_current_data())) # DEBUG
