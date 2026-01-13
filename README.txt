@@ -1,0 +1,2 @@
+Use "protoc --proto_path=. --python_out=. gtfs-realtime.proto" in a terminal cd'd into this folder to create a python converter for .pb to .py of the Kingston Transit .pb files.
+To install protoc: https://protobuf.dev/installation/
