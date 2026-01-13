@@ -1,3 +1,7 @@
+# model1.py
+# Trains a first ETA model from training_data.csv and compares it to a simple baseline.
+# Uses progress_rate (how quickly distance-to-stop is shrinking) if present.
+
 import numpy as np
 import pandas as pd
 
@@ -15,7 +19,12 @@ def main():
     df = pd.read_csv(DATA)
 
     # Keep only rows with the essentials
-    df = df.dropna(subset=["eta_seconds", "dist_to_stop_m", "speed_mps", "route_id", "stop_id", "feed_timestamp"])
+    required = ["eta_seconds", "dist_to_stop_m", "speed_mps", "route_id", "stop_id", "feed_timestamp"]
+    df = df.dropna(subset=required)
+
+    # Ensure categorical columns are strings (avoids weird numeric parsing)
+    df["route_id"] = df["route_id"].astype(str)
+    df["stop_id"] = df["stop_id"].astype(str)
 
     # Baseline: distance / speed (avoid divide-by-zero)
     df["eta_baseline"] = df["dist_to_stop_m"] / np.maximum(df["speed_mps"], 1.0)
@@ -30,6 +39,7 @@ def main():
     num_features = [
         "dist_to_stop_m",
         "speed_mps",
+        "progress_rate",          # <-- NEW
         "bearing",
         "current_stop_sequence",
         "congestion_level",
@@ -39,6 +49,11 @@ def main():
         "stopped_flag",
     ]
     cat_features = ["route_id", "stop_id"]
+
+    # If progress_rate isn't in the data yet, create it as 0
+    if "progress_rate" not in df.columns:
+        train_df["progress_rate"] = 0.0
+        test_df["progress_rate"] = 0.0
 
     # Fill missing numeric values
     train_df[num_features] = train_df[num_features].fillna(0)
@@ -55,7 +70,12 @@ def main():
         remainder="drop",
     )
 
-    model = HistGradientBoostingRegressor(max_depth=6, learning_rate=0.08, max_iter=300, random_state=42)
+    model = HistGradientBoostingRegressor(
+        max_depth=6,
+        learning_rate=0.08,
+        max_iter=300,
+        random_state=42
+    )
 
     pipe = Pipeline([("pre", pre), ("model", model)])
 
@@ -72,10 +92,12 @@ def main():
     print(f"Model MAE:    {mae_model/60:.2f} minutes")
 
     # Show a few predictions for sanity-checking
-    out = test_df[["route_id", "stop_id", "dist_to_stop_m", "speed_mps", "eta_seconds", "eta_baseline"]].copy()
+    out_cols = ["route_id", "stop_id", "dist_to_stop_m", "speed_mps", "progress_rate", "eta_seconds", "eta_baseline"]
+    out = test_df[out_cols].copy()
     out["eta_pred"] = pred
     out["eta_pred_min"] = out["eta_pred"] / 60
     out["eta_true_min"] = out["eta_seconds"] / 60
+
     print("\nSample predictions:")
     print(out.head(12).to_string(index=False))
 
