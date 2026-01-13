@@ -13,12 +13,12 @@ def get_current_data():
 def proto_to_csv_string(current_data=get_current_data):
     csv_dict = [["trip_id", "route_id", "stop_id", "speed_mps", "feed_timestamp", "vehicle_id"]]
     for entity in current_data:
-        # If the bus is on a route.
         #print(entity) # DEBUG
+        # If the bus is on a route.
         if (entity.vehicle.HasField("trip")):
             row = [f"{entity.vehicle.trip.trip_id}", f"{entity.vehicle.trip.route_id}", f"{entity.vehicle.stop_id}", f"{entity.vehicle.position.speed}", f"{entity.vehicle.trip.start_time}", f"{entity.vehicle.vehicle.id}"]
-            
             csv_dict.append(row)
+
     print(csv_dict)
 
     with open('current_data.csv', 'w') as f:
@@ -26,4 +26,4 @@ def proto_to_csv_string(current_data=get_current_data):
         writer.writerows(csv_dict)
 
 #print(get_current_data()) # DEBUG
-print(proto_to_csv_string(get_current_data())) # DEBUG
+#print(proto_to_csv_string(get_current_data())) # DEBUG
