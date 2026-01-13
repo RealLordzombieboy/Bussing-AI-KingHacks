@@ -11,10 +11,10 @@ def get_current_data():
     return feed.entity
 
 def proto_to_csv_string(current_data):
-    csv_dict = [["entity_id","vehicle_id","trip_id","route_id","direction_id","timestamp","lat","lon","speed_mps","bearing","stop_id","current_status"]]
+    csv_dict = [["trip_id", "route_id", "stop_id", "speed_mps", "feed_timestamp", "vehicle_id"]]
     for entity in current_data:
         # If the bus is on a route.
-        print(entity)
+        #print(entity) # DEBUG
         if (entity.vehicle.HasField("trip")):
             row = [f"{entity.vehicle.trip.trip_id}", f"{entity.vehicle.trip.route_id}", f"{entity.vehicle.stop_id}", f"{entity.vehicle.position.speed}", f"{entity.vehicle.trip.start_time}", f"{entity.vehicle.vehicle.id}"]
             
