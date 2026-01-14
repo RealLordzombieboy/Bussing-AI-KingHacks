@@ -8,6 +8,7 @@
 
 import numpy as np
 import pandas as pd
+import joblib
 
 from sklearn.metrics import mean_absolute_error
 from sklearn.preprocessing import OneHotEncoder
@@ -91,6 +92,9 @@ def main():
 
     pipe.fit(X_train, y_train)
     pred = pipe.predict(X_test)
+
+    joblib.dump(pipe, "eta_model.joblib")
+    print("Saved eta_model.joblib")
 
     mae_model = mean_absolute_error(y_test, pred)
     mae_baseline = mean_absolute_error(y_test, test_df["eta_baseline"].values)

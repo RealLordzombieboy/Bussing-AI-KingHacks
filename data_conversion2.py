@@ -38,7 +38,6 @@ def haversine_m(lat1, lon1, lat2, lon2):
 def load_stop_lookup():
     stops = pd.read_csv(STOPS_CSV)
 
-    # Normalize stop IDs for joining with realtime feed
     stops["stop_id_norm"] = stops["Stop ID"].apply(norm_stop_id)
 
     stops = stops.rename(
@@ -50,13 +49,13 @@ def load_stop_lookup():
     )
 
     stops = stops.dropna(subset=["stop_id_norm", "stop_lat", "stop_lon"])
-
     stops = stops.drop_duplicates(subset=["stop_id_norm"], keep="first")
 
     return (
         stops.set_index("stop_id_norm")[["stop_lat", "stop_lon", "stop_name"]]
         .to_dict("index")
     )
+
 
 def fetch_feed(timeout=20) -> gtfs_realtime_pb2.FeedMessage:
     r = requests.get(FEED_URL, timeout=timeout)
@@ -76,7 +75,7 @@ def feed_to_rows(feed: gtfs_realtime_pb2.FeedMessage, stop_lookup: dict):
         has_pos = v.HasField("position")
         has_trip = v.HasField("trip")
 
-        # Trip start info (only if trip exists)
+        # Trip meta (IMPORTANT for matching TripUpdates)
         trip_start_date = v.trip.start_date if (has_trip and v.trip.HasField("start_date")) else None
         trip_start_time = v.trip.start_time if (has_trip and v.trip.HasField("start_time")) else None
 
@@ -87,7 +86,6 @@ def feed_to_rows(feed: gtfs_realtime_pb2.FeedMessage, stop_lookup: dict):
         stop_name = None
         dist_to_stop_m = None
 
-        # Compute distance-to-stop only if we have position + stop_id exists in lookup
         if stop_id and has_pos and stop_id in stop_lookup:
             stop_lat = float(stop_lookup[stop_id]["stop_lat"])
             stop_lon = float(stop_lookup[stop_id]["stop_lon"])
@@ -101,7 +99,7 @@ def feed_to_rows(feed: gtfs_realtime_pb2.FeedMessage, stop_lookup: dict):
 
         rows.append(
             {
-                "feed_timestamp": int(feed.header.timestamp),  # snapshot time
+                "feed_timestamp": int(feed.header.timestamp),
                 "entity_id": e.id,
 
                 "vehicle_id": v.vehicle.id if v.HasField("vehicle") else None,
@@ -109,7 +107,7 @@ def feed_to_rows(feed: gtfs_realtime_pb2.FeedMessage, stop_lookup: dict):
                 "route_id": v.trip.route_id if (has_trip and v.trip.HasField("route_id")) else None,
                 "trip_id": v.trip.trip_id if (has_trip and v.trip.HasField("trip_id")) else None,
 
-                # NEW: for schedule alignment
+                # NEW:
                 "trip_start_date": trip_start_date,
                 "trip_start_time": trip_start_time,
 
@@ -130,9 +128,7 @@ def feed_to_rows(feed: gtfs_realtime_pb2.FeedMessage, stop_lookup: dict):
                 "odometer": v.position.odometer if (has_pos and v.position.HasField("odometer")) else None,
             }
         )
-
     return rows
-
 
 
 def append_rows(rows, out_path=OUT_CSV):
@@ -152,9 +148,9 @@ def append_rows(rows, out_path=OUT_CSV):
 def main():
     stop_lookup = load_stop_lookup()
     print("Stops loaded:", len(stop_lookup))
+    print(f"Logging to {OUT_CSV} every {INTERVAL_SEC}s. Ctrl+C to stop.")
 
     last_ts = None
-    print(f"Logging to {OUT_CSV} every {INTERVAL_SEC}s. Ctrl+C to stop.")
 
     while True:
         try:
