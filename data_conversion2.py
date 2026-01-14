@@ -76,6 +76,10 @@ def feed_to_rows(feed: gtfs_realtime_pb2.FeedMessage, stop_lookup: dict):
         has_pos = v.HasField("position")
         has_trip = v.HasField("trip")
 
+        # Trip start info (only if trip exists)
+        trip_start_date = v.trip.start_date if (has_trip and v.trip.HasField("start_date")) else None
+        trip_start_time = v.trip.start_time if (has_trip and v.trip.HasField("start_time")) else None
+
         # Normalize stop_id if present
         stop_id_raw = v.stop_id if v.HasField("stop_id") else None
         stop_id = norm_stop_id(stop_id_raw) if stop_id_raw is not None else None
@@ -105,6 +109,10 @@ def feed_to_rows(feed: gtfs_realtime_pb2.FeedMessage, stop_lookup: dict):
                 "route_id": v.trip.route_id if (has_trip and v.trip.HasField("route_id")) else None,
                 "trip_id": v.trip.trip_id if (has_trip and v.trip.HasField("trip_id")) else None,
 
+                # NEW: for schedule alignment
+                "trip_start_date": trip_start_date,
+                "trip_start_time": trip_start_time,
+
                 "stop_id": stop_id,
                 "stop_name": stop_name,
                 "dist_to_stop_m": dist_to_stop_m,
@@ -122,7 +130,9 @@ def feed_to_rows(feed: gtfs_realtime_pb2.FeedMessage, stop_lookup: dict):
                 "odometer": v.position.odometer if (has_pos and v.position.HasField("odometer")) else None,
             }
         )
+
     return rows
+
 
 
 def append_rows(rows, out_path=OUT_CSV):
