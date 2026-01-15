@@ -1,5 +1,7 @@
+# delay_comparison.py
 import os
 import re
+import json
 import joblib
 import numpy as np
 import pandas as pd
@@ -17,6 +19,7 @@ MODEL_PATH = "eta_model.joblib"
 
 OUT_HTML = "delay_comparison_latest.html"
 OUT_CSV = "delay_comparison_latest.csv"
+OUT_JSON = "live_map.json"  # for the map
 
 TZ = ZoneInfo("America/Toronto")
 UTC = ZoneInfo("UTC")
@@ -25,7 +28,6 @@ UTC = ZoneInfo("UTC")
 # ---------- helpers ----------
 def yyyymmdd_to_date(s: str):
     s = str(s).strip()
-    # handle "20260114.0" or floats read from CSV
     s = s.replace(".0", "")
     return datetime.strptime(s, "%Y%m%d").date()
 
@@ -46,7 +48,6 @@ def norm_stop_id(s) -> str:
     if pd.isna(s):
         return None
     s = str(s).strip()
-    # if it looks like "278" or "00278" -> S00278
     if re.fullmatch(r"\d+", s):
         return "S" + s.zfill(5)
     m = re.fullmatch(r"[Ss](\d+)", s)
@@ -78,7 +79,6 @@ def pick_latest_tripupdates_snapshot(index_csv: str):
     if idx.empty:
         raise RuntimeError(f"{index_csv} is empty. Capture tripupdates first.")
 
-    # Use the last row (latest capture)
     row = idx.sort_values("capture_ts").iloc[-1]
     pb_path = str(row["pb_path"])
     veh_ts = int(row["vehicle_feed_ts"])
@@ -87,66 +87,90 @@ def pick_latest_tripupdates_snapshot(index_csv: str):
     return pb_path, veh_ts, tu_ts, cap_ts
 
 
-def safe_float(x):
+def _fmt_hhmm(dt_val) -> str | None:
+    """Return 'HH:MM' in local timezone for display."""
+    if pd.isna(dt_val):
+        return None
     try:
-        if pd.isna(x):
-            return np.nan
-        return float(x)
+        # dt_val is already tz-aware in our pipeline
+        return pd.Timestamp(dt_val).strftime("%H:%M")
     except Exception:
-        return np.nan
+        return None
 
 
-# ---------- main ----------
-def main():
-    if not os.path.exists(MODEL_PATH):
-        raise FileNotFoundError(
-            f"Missing {MODEL_PATH}. Run model1.py first (and ensure it saves eta_model.joblib)."
-        )
+def _fmt_label(time_dt, delay_min) -> str | None:
+    """
+    Example: "18:26 (+1.4m)" or "18:26 (-0.8m)"
+    If time missing -> None.
+    If delay missing -> "18:26" (still show time).
+    """
+    t = _fmt_hhmm(time_dt)
+    if not t:
+        return None
+    if pd.isna(delay_min):
+        return t
+    try:
+        d = float(delay_min)
+        sign = "+" if d >= 0 else ""
+        return f"{t} ({sign}{d:.1f}m)"
+    except Exception:
+        return t
 
-    if not os.path.exists(TRIPUPDATES_INDEX):
-        raise FileNotFoundError(
-            f"Missing {TRIPUPDATES_INDEX}. Your capture script should write it."
-        )
 
-    # 0) pick the latest tripupdates snapshot that matches vehicle feed timestamp
-    tu_pb_path, veh_feed_ts, tu_feed_ts, cap_ts = pick_latest_tripupdates_snapshot(TRIPUPDATES_INDEX)
+def build_delay_table(
+    gtfs_zip=GTFS_ZIP,
+    veh_log=VEH_LOG,
+    tripupdates_index=TRIPUPDATES_INDEX,
+    model_path=MODEL_PATH,
+):
+    """
+    Returns:
+      - out_df: human table (for CSV/HTML/map JSON)
+      - meta: snapshot info + match rate
+      - snap_full: full merged snapshot
+    """
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Missing {model_path}. Run model1.py first (and save eta_model.joblib).")
+    if not os.path.exists(tripupdates_index):
+        raise FileNotFoundError(f"Missing {tripupdates_index}. Your capture script should write it.")
+    if not os.path.exists(veh_log):
+        raise FileNotFoundError(f"Missing {veh_log}. Run data_conversion2.py / capture first.")
+
+    tu_pb_path, veh_feed_ts, tu_feed_ts, cap_ts = pick_latest_tripupdates_snapshot(tripupdates_index)
     if not os.path.exists(tu_pb_path):
         raise FileNotFoundError(f"TripUpdates pb not found: {tu_pb_path}")
 
-    # 1) vehicle snapshot aligned to that vehicle feed timestamp
-    vdf = pd.read_csv(VEH_LOG)
+    # 1) vehicle snapshot aligned to vehicle_feed_ts
+    vdf = pd.read_csv(veh_log)
     if "feed_timestamp" not in vdf.columns:
         raise RuntimeError("vehicle_positions_log.csv missing feed_timestamp column")
 
-    # pick that exact feed timestamp if it exists; otherwise fallback to nearest
     if (vdf["feed_timestamp"] == veh_feed_ts).any():
         snap = vdf[vdf["feed_timestamp"] == veh_feed_ts].copy()
         used_ts = veh_feed_ts
     else:
-        # nearest timestamp fallback (rare)
         vdf["_abs_diff"] = (vdf["feed_timestamp"] - veh_feed_ts).abs()
         nearest = vdf.loc[vdf["_abs_diff"].idxmin(), "feed_timestamp"]
         snap = vdf[vdf["feed_timestamp"] == nearest].copy()
         used_ts = int(nearest)
 
-    # normalize IDs + required fields
+    # normalize IDs
     snap["trip_id"] = snap.get("trip_id", None).apply(clean_id)
     snap["route_id"] = snap.get("route_id", None).apply(clean_id)
     snap["stop_id"] = snap.get("stop_id", None).apply(norm_stop_id)
 
-    # some logs store current_stop_sequence as float; fix it
     snap["current_stop_sequence"] = pd.to_numeric(snap.get("current_stop_sequence", np.nan), errors="coerce")
     snap = snap.dropna(subset=["trip_id", "route_id", "current_stop_sequence", "dist_to_stop_m", "speed_mps"]).copy()
     snap["current_stop_sequence"] = snap["current_stop_sequence"].astype(int)
 
-    # ensure trip_start_date exists; fallback to local date of snapshot
+    # ensure trip_start_date exists
     if "trip_start_date" not in snap.columns or snap["trip_start_date"].isna().all():
         local_date = datetime.fromtimestamp(int(used_ts), tz=UTC).astimezone(TZ).strftime("%Y%m%d")
         snap["trip_start_date"] = local_date
     snap["trip_start_date"] = snap["trip_start_date"].apply(clean_id)
 
-    # 2) scheduled lookup from GTFS static (trip_id + stop_sequence -> sched_arrival_sec)
-    st = load_stop_times_lookup(GTFS_ZIP).copy()
+    # 2) scheduled lookup from GTFS static
+    st = load_stop_times_lookup(gtfs_zip).copy()
     st["trip_id"] = st["trip_id"].astype(str)
     st["stop_sequence"] = st["stop_sequence"].astype(int)
 
@@ -160,13 +184,12 @@ def main():
     )
     snap = snap.dropna(subset=["sched_arrival_sec"]).copy()
 
-    # scheduled arrival unix
     snap["sched_arrival_ts"] = snap.apply(
         lambda r: scheduled_unix_from_start_date(r["trip_start_date"], int(r["sched_arrival_sec"])),
         axis=1,
     )
 
-    # 3) TripUpdates (official RT prediction)
+    # 3) TripUpdates (official RT)
     tu = parse_tripupdates_pb(tu_pb_path).copy()
     tu["trip_id"] = tu["trip_id"].astype(str)
     tu["stop_sequence"] = pd.to_numeric(tu["stop_sequence"], errors="coerce").astype("Int64")
@@ -175,7 +198,6 @@ def main():
     tu = tu.dropna(subset=["trip_id", "stop_sequence", "rt_pred_arrival_ts"]).copy()
     tu["stop_sequence"] = tu["stop_sequence"].astype(int)
 
-    # merge on trip_id + stop_sequence (best common key)
     snap = snap.merge(
         tu[["trip_id", "stop_sequence", "rt_pred_arrival_ts"]],
         left_on=["trip_id", "current_stop_sequence"],
@@ -184,20 +206,16 @@ def main():
         suffixes=("", "_tu"),
     )
 
-    # measure match rate
     match_rate = float(snap["rt_pred_arrival_ts"].notna().mean()) if len(snap) else 0.0
 
     # 4) AI model prediction
-    pipe = joblib.load(MODEL_PATH)
-
+    pipe = joblib.load(model_path)
     snap = add_time_features(snap)
 
-    # features the model expects; fill if missing
     for col in ["progress_rate", "progress_rate_ewm", "speed_ewm", "bearing", "congestion_level"]:
         if col not in snap.columns:
             snap[col] = 0.0
 
-    # make sure stop_id + route_id exist for model categorical inputs
     snap["route_id"] = snap["route_id"].fillna("UNK").astype(str)
     snap["stop_id"] = snap["stop_id"].fillna("UNK").astype(str)
 
@@ -212,10 +230,10 @@ def main():
         snap[c] = pd.to_numeric(snap[c], errors="coerce").fillna(0.0)
 
     eta_pred_s = pipe.predict(snap[num_features + cat_features])
-    eta_pred_s = np.maximum(eta_pred_s, 0)  # no negative ETAs
+    eta_pred_s = np.maximum(eta_pred_s, 0)
     snap["ai_pred_arrival_ts"] = snap["feed_timestamp"] + eta_pred_s
 
-    # 5) Compute times + ETAs + delays
+    # 5) times, etas, delays
     snapshot_local = pd.to_datetime(int(used_ts), unit="s", utc=True).tz_convert(TZ)
     snap["snapshot_local"] = snapshot_local
 
@@ -230,10 +248,8 @@ def main():
     snap["rt_eta_min"] = (snap["rt_pred_arrival_ts"] - snap["feed_timestamp"]) / 60.0
     snap["rt_delay"] = (snap["rt_pred_arrival_ts"] - snap["sched_arrival_ts"]) / 60.0
 
-    # 6) Pick a nice output subset (soonest scheduled arrivals)
+    # output subset
     out = snap.copy()
-
-    # Keep stop_name if present
     if "stop_name" not in out.columns:
         out["stop_name"] = ""
 
@@ -244,21 +260,35 @@ def main():
         "rt_time", "rt_eta_min", "rt_delay",
         "ai_time", "ai_eta_min", "ai_delay",
         "dist_to_stop_m", "speed_mps",
+        "vehicle_id", "lat", "lon", "trip_id",
     ]].copy()
 
-    # rename for the nicer headers you used
     out = out.rename(columns={
         "dist_to_stop_m": "dist_m",
         "speed_mps": "speed",
     })
 
-    # sort: show things that should be arriving soon (by scheduled time)
-    out = out.sort_values("sched_time").head(25)
+    # --- NEW: compact display strings for the map popup ---
+    out["sched_hhmm"] = out["sched_time"].apply(_fmt_hhmm)
+    out["rt_label"] = out.apply(lambda r: _fmt_label(r["rt_time"], r["rt_delay"]), axis=1)
+    out["ai_label"] = out.apply(lambda r: _fmt_label(r["ai_time"], r["ai_delay"]), axis=1)
 
-    # 7) Save CSV (raw-ish)
-    out.to_csv(OUT_CSV, index=False)
+    meta = {
+        "snapshot_local": str(snapshot_local),
+        "vehicle_feed_ts_used": int(used_ts),
+        "veh_feed_ts_target": int(veh_feed_ts),
+        "tripupdates_feed_ts": int(tu_feed_ts),
+        "capture_ts": int(cap_ts),
+        "tripupdates_pb_path": tu_pb_path,
+        "match_rate": match_rate,
+    }
 
-    # 8) Save HTML (readable)
+    return out, meta, snap
+
+
+def write_outputs(out: pd.DataFrame, meta: dict, out_csv=OUT_CSV, out_html=OUT_HTML):
+    out.to_csv(out_csv, index=False)
+
     def fmt_dt(x):
         if pd.isna(x):
             return ""
@@ -266,23 +296,22 @@ def main():
 
     html_df = out.copy()
     for c in ["snapshot_local", "sched_time", "rt_time", "ai_time"]:
-        html_df[c] = html_df[c].apply(fmt_dt)
+        if c in html_df.columns:
+            html_df[c] = html_df[c].apply(fmt_dt)
 
-    # round numeric columns for display
     for c in ["sched_eta_min", "rt_eta_min", "rt_delay", "ai_eta_min", "ai_delay", "dist_m", "speed"]:
         if c in html_df.columns:
             html_df[c] = pd.to_numeric(html_df[c], errors="coerce").round(2)
 
     title = "Delay Comparison (Schedule vs Official RT vs Our AI)"
-    meta = f"""
+    meta_html = f"""
     <h1>{title}</h1>
-    <p><b>Snapshot (local):</b> {snapshot_local}</p>
-    <p><b>TripUpdates snapshot:</b> {tu_pb_path}</p>
-    <p><b>TripUpdates match rate:</b> {match_rate*100:.1f}%</p>
+    <p><b>Snapshot (local):</b> {meta.get("snapshot_local")}</p>
+    <p><b>TripUpdates snapshot:</b> {meta.get("tripupdates_pb_path")}</p>
+    <p><b>TripUpdates match rate:</b> {meta.get("match_rate", 0)*100:.1f}%</p>
     <hr/>
     """
 
-    table_html = html_df.to_html(index=False, escape=False)
     style = """
     <style>
       body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; padding: 18px; }
@@ -297,25 +326,93 @@ def main():
     note = """
     <p class="note">
       Notes:
-      <br/>• sched_eta_min / rt_eta_min / ai_eta_min are “minutes from snapshot until arrival” (negative means it was scheduled/predicted in the past).
+      <br/>• sched_eta_min / rt_eta_min / ai_eta_min are “minutes from snapshot until arrival” (negative means the scheduled/predicted time is already in the past).
       <br/>• rt_delay / ai_delay are “minutes late vs schedule” (negative means early).
     </p>
     """
 
-    with open(OUT_HTML, "w", encoding="utf-8") as f:
+    table_html = html_df.to_html(index=False, escape=False)
+
+    with open(out_html, "w", encoding="utf-8") as f:
         f.write("<html><head>")
         f.write(style)
         f.write("</head><body>")
-        f.write(meta)
+        f.write(meta_html)
         f.write(table_html)
         f.write(note)
         f.write("</body></html>")
 
+
+def write_live_json(out: pd.DataFrame, meta: dict, json_path=OUT_JSON):
+    """
+    Writes a compact JSON file for the map.
+    IMPORTANT: include sched_hhmm / rt_label / ai_label so the popup isn't cluttered.
+    """
+    df = out.dropna(subset=["lat", "lon"]).copy()
+
+    def _num(x):
+        if x is None or (isinstance(x, float) and np.isnan(x)):
+            return None
+        try:
+            return float(x)
+        except Exception:
+            return None
+
+    def _str(x):
+        if x is None:
+            return None
+        if isinstance(x, float) and np.isnan(x):
+            return None
+        s = str(x)
+        if s == "NaT":
+            return None
+        return s
+
+    markers = []
+    for _, r in df.iterrows():
+        markers.append({
+            "lat": _num(r.get("lat")),
+            "lon": _num(r.get("lon")),
+
+            "route_id": _str(r.get("route_id")),
+            "vehicle_id": _str(r.get("vehicle_id")),
+            "trip_id": _str(r.get("trip_id")),
+
+            "stop_id": _str(r.get("stop_id")),
+            "stop_name": _str(r.get("stop_name")),
+
+            "dist_m": _num(r.get("dist_m")),
+            "speed": _num(r.get("speed")),
+
+            # compact popup fields
+            "sched_hhmm": _str(r.get("sched_hhmm")),
+            "rt_label": _str(r.get("rt_label")),
+            "ai_label": _str(r.get("ai_label")),
+
+            # keep numeric values for coloring/debugging
+            "rt_delay": _num(r.get("rt_delay")),
+            "ai_delay": _num(r.get("ai_delay")),
+            "ai_eta_min": _num(r.get("ai_eta_min")),
+        })
+
+    payload = {"meta": meta, "markers": markers}
+
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+
+
+def main():
+    out, meta, _snap_full = build_delay_table()
+    out = out.sort_values("sched_time").head(60)
+
+    write_outputs(out, meta, out_csv=OUT_CSV, out_html=OUT_HTML)
+    write_live_json(out, meta, json_path=OUT_JSON)
+
     print("\n=== Delay Comparison (Schedule vs Official RT vs Our AI) ===")
-    print(f"Snapshot time (local): {snapshot_local}")
-    print(f"TripUpdates snapshot: {tu_pb_path}")
-    print(f"TripUpdates match rate (shown rows): {match_rate*100:.1f}%")
-    print(f"\nWrote:\n  - {OUT_CSV}\n  - {OUT_HTML}\n")
+    print(f"Snapshot time (local): {meta.get('snapshot_local')}")
+    print(f"TripUpdates snapshot: {meta.get('tripupdates_pb_path')}")
+    print(f"TripUpdates match rate (shown rows): {meta.get('match_rate', 0)*100:.1f}%")
+    print(f"\nWrote:\n  - {OUT_CSV}\n  - {OUT_HTML}\n  - {OUT_JSON}\n")
 
 
 if __name__ == "__main__":
