@@ -1,3 +1,4 @@
+# data_conversion2.py
 from google.transit import gtfs_realtime_pb2
 import requests
 import csv
@@ -6,16 +7,26 @@ import time
 import pandas as pd
 import math
 import re
+from pathlib import Path
 
-FEED_URL = "https://api.cityofkingston.ca/gtfs-realtime/vehicleupdates.pb"
+# --- URLs ---
+VEHICLE_URL = "https://api.cityofkingston.ca/gtfs-realtime/vehicleupdates.pb"
+TRIPUPDATES_URL = "https://api.cityofkingston.ca/gtfs-realtime/tripupdates.pb"
+
+# --- Outputs ---
 OUT_CSV = "vehicle_positions_log.csv"
 INTERVAL_SEC = 30
 
 STOPS_CSV = "bus_stops.csv"
 
+TRIPUPDATES_DIR = Path("tripupdates_snapshots")
+TRIPUPDATES_INDEX = "tripupdates_index.csv"
+
 
 def norm_stop_id(s: str) -> str:
     """Normalize stop IDs so formats like '00254' and 'S254' become 'S00254'."""
+    if s is None:
+        return None
     s = str(s).strip()
     if re.fullmatch(r"\d+", s):
         return "S" + s.zfill(5)
@@ -39,7 +50,6 @@ def load_stop_lookup():
     stops = pd.read_csv(STOPS_CSV)
 
     stops["stop_id_norm"] = stops["Stop ID"].apply(norm_stop_id)
-
     stops = stops.rename(
         columns={
             "STOP_LAT": "stop_lat",
@@ -47,7 +57,6 @@ def load_stop_lookup():
             "Stop Name": "stop_name",
         }
     )
-
     stops = stops.dropna(subset=["stop_id_norm", "stop_lat", "stop_lon"])
     stops = stops.drop_duplicates(subset=["stop_id_norm"], keep="first")
 
@@ -57,12 +66,22 @@ def load_stop_lookup():
     )
 
 
-def fetch_feed(timeout=20) -> gtfs_realtime_pb2.FeedMessage:
-    r = requests.get(FEED_URL, timeout=timeout)
+def fetch_pb(url: str, timeout=20) -> bytes:
+    r = requests.get(url, timeout=timeout)
     r.raise_for_status()
+    return r.content
+
+
+def parse_vehicle_feed(pb: bytes) -> gtfs_realtime_pb2.FeedMessage:
     feed = gtfs_realtime_pb2.FeedMessage()
-    feed.ParseFromString(r.content)
+    feed.ParseFromString(pb)
     return feed
+
+
+def parse_tripupdates_header_ts(pb: bytes) -> int:
+    feed = gtfs_realtime_pb2.FeedMessage()
+    feed.ParseFromString(pb)
+    return int(feed.header.timestamp) if feed.header and feed.header.timestamp else None
 
 
 def feed_to_rows(feed: gtfs_realtime_pb2.FeedMessage, stop_lookup: dict):
@@ -75,11 +94,6 @@ def feed_to_rows(feed: gtfs_realtime_pb2.FeedMessage, stop_lookup: dict):
         has_pos = v.HasField("position")
         has_trip = v.HasField("trip")
 
-        # Trip meta (IMPORTANT for matching TripUpdates)
-        trip_start_date = v.trip.start_date if (has_trip and v.trip.HasField("start_date")) else None
-        trip_start_time = v.trip.start_time if (has_trip and v.trip.HasField("start_time")) else None
-
-        # Normalize stop_id if present
         stop_id_raw = v.stop_id if v.HasField("stop_id") else None
         stop_id = norm_stop_id(stop_id_raw) if stop_id_raw is not None else None
 
@@ -97,9 +111,12 @@ def feed_to_rows(feed: gtfs_realtime_pb2.FeedMessage, stop_lookup: dict):
                 stop_lon,
             )
 
+        trip_start_date = v.trip.start_date if (has_trip and v.trip.HasField("start_date")) else None
+        trip_start_time = v.trip.start_time if (has_trip and v.trip.HasField("start_time")) else None
+
         rows.append(
             {
-                "feed_timestamp": int(feed.header.timestamp),
+                "feed_timestamp": int(feed.header.timestamp),  # vehicle feed header timestamp
                 "entity_id": e.id,
 
                 "vehicle_id": v.vehicle.id if v.HasField("vehicle") else None,
@@ -107,7 +124,6 @@ def feed_to_rows(feed: gtfs_realtime_pb2.FeedMessage, stop_lookup: dict):
                 "route_id": v.trip.route_id if (has_trip and v.trip.HasField("route_id")) else None,
                 "trip_id": v.trip.trip_id if (has_trip and v.trip.HasField("trip_id")) else None,
 
-                # NEW:
                 "trip_start_date": trip_start_date,
                 "trip_start_time": trip_start_time,
 
@@ -134,36 +150,70 @@ def feed_to_rows(feed: gtfs_realtime_pb2.FeedMessage, stop_lookup: dict):
 def append_rows(rows, out_path=OUT_CSV):
     if not rows:
         return 0
-
     file_exists = os.path.exists(out_path)
     with open(out_path, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         if not file_exists:
             writer.writeheader()
         writer.writerows(rows)
-
     return len(rows)
+
+
+def append_tripupdates_index(row: dict, out_path=TRIPUPDATES_INDEX):
+    file_exists = os.path.exists(out_path)
+    with open(out_path, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(row.keys()))
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(row)
 
 
 def main():
     stop_lookup = load_stop_lookup()
     print("Stops loaded:", len(stop_lookup))
-    print(f"Logging to {OUT_CSV} every {INTERVAL_SEC}s. Ctrl+C to stop.")
 
-    last_ts = None
+    TRIPUPDATES_DIR.mkdir(parents=True, exist_ok=True)
+
+    last_vehicle_ts = None
+    print(f"Logging vehicle positions to {OUT_CSV} every {INTERVAL_SEC}s")
+    print(f"Snapshotting TripUpdates into {TRIPUPDATES_DIR}/ and indexing {TRIPUPDATES_INDEX}")
+    print("Ctrl+C to stop.\n")
 
     while True:
         try:
-            feed = fetch_feed()
-            ts = int(feed.header.timestamp)
+            capture_ts = int(time.time())
 
-            if last_ts is not None and ts == last_ts:
-                print("No new feed update (same timestamp).")
+            # ---- vehicle feed ----
+            vehicle_pb = fetch_pb(VEHICLE_URL)
+            vfeed = parse_vehicle_feed(vehicle_pb)
+            v_ts = int(vfeed.header.timestamp)
+
+            # ---- tripupdates feed (same loop) ----
+            trip_pb = fetch_pb(TRIPUPDATES_URL)
+            tu_ts = parse_tripupdates_header_ts(trip_pb)
+
+            # avoid duplicating same vehicle timestamp
+            if last_vehicle_ts is not None and v_ts == last_vehicle_ts:
+                print("No new vehicle feed update (same timestamp).")
             else:
-                rows = feed_to_rows(feed, stop_lookup)
+                rows = feed_to_rows(vfeed, stop_lookup)
                 n = append_rows(rows)
-                print(f"Appended {n} rows @ feed_timestamp={ts}")
-                last_ts = ts
+                print(f"Vehicle: appended {n} rows @ feed_timestamp={v_ts}")
+                last_vehicle_ts = v_ts
+
+            # save tripupdates snapshot regardless (it can update at different cadence)
+            pb_name = f"tripupdates_capture_{capture_ts}_veh_{v_ts}_tu_{tu_ts}.pb"
+            pb_path = TRIPUPDATES_DIR / pb_name
+            pb_path.write_bytes(trip_pb)
+
+            append_tripupdates_index({
+                "capture_ts": capture_ts,
+                "vehicle_feed_ts": v_ts,
+                "tripupdates_feed_ts": tu_ts,
+                "pb_path": str(pb_path),
+            })
+
+            print(f"TripUpdates: saved snapshot {pb_path.name}")
 
         except Exception as e:
             print("Error:", repr(e))

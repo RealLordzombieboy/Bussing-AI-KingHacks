@@ -1,42 +1,21 @@
-
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Delay Comparison</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h2 { margin-bottom: 6px; }
-    .meta { color: #444; margin-bottom: 14px; }
-    table.table {
-      border-collapse: collapse;
-      width: 100%;
-      font-size: 14px;
-    }
-    table.table th, table.table td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-      vertical-align: top;
-      white-space: nowrap;
-    }
-    table.table th {
-      background: #f3f3f3;
-      position: sticky;
-      top: 0;
-      z-index: 2;
-    }
-    tr:nth-child(even) { background: #fafafa; }
-  </style>
-</head>
-<body>
-  <h2>Delay Comparison (Schedule vs Official RT vs Our AI)</h2>
-  <div class="meta">
-    Snapshot time (local): 2026-01-14 18:31:58-05:00<br/>
-    TripUpdates match rate (shown rows): 80.0%
-  </div>
-  <table class="dataframe table">
+<html><head>
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; padding: 18px; }
+      table { border-collapse: collapse; width: 100%; font-size: 14px; }
+      th, td { border: 1px solid #e6e6e6; padding: 8px 10px; vertical-align: top; }
+      th { background: #f6f6f6; text-align: left; position: sticky; top: 0; }
+      tr:nth-child(even) { background: #fbfbfb; }
+      .note { color: #666; font-size: 13px; }
+    </style>
+    </head><body>
+    <h1>Delay Comparison (Schedule vs Official RT vs Our AI)</h1>
+    <p><b>Snapshot (local):</b> 2026-01-15 12:02:36-05:00</p>
+    <p><b>TripUpdates snapshot:</b> tripupdates_snapshots/tripupdates_capture_1768496560_veh_1768496556_tu_1768496556.pb</p>
+    <p><b>TripUpdates match rate:</b> 78.9%</p>
+    <hr/>
+    <table border="1" class="dataframe">
   <thead>
-    <tr style="text-align: left;">
+    <tr style="text-align: right;">
       <th>route_id</th>
       <th>stop_id</th>
       <th>stop_name</th>
@@ -55,406 +34,410 @@
   </thead>
   <tbody>
     <tr>
-      <td>4.0</td>
-      <td>S00383</td>
-      <td>Sir John A Macdonald Blvd (north side of Princess)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:26:00-05:00</td>
-      <td>-5.97</td>
-      <td>2026-01-14 18:26:00-05:00</td>
-      <td>-5.97</td>
-      <td>0.00</td>
-      <td>2026-01-14 18:32:24-05:00</td>
-      <td>0.44</td>
-      <td>6.41</td>
-      <td>172.43</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <td>501.0</td>
-      <td>S00272</td>
-      <td>Barrie Street (south side of Princess)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:25:00-05:00</td>
-      <td>-6.97</td>
-      <td>2026-01-14 18:26:24-05:00</td>
-      <td>-5.57</td>
-      <td>1.40</td>
-      <td>2026-01-14 18:32:12-05:00</td>
-      <td>0.24</td>
-      <td>7.20</td>
-      <td>56.88</td>
-      <td>8.05</td>
-    </tr>
-    <tr>
-      <td>501.0</td>
-      <td>S09040</td>
-      <td>Sir John A Macdonald Blvd (north side of King)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:28:00-05:00</td>
-      <td>-3.97</td>
-      <td>2026-01-14 18:28:00-05:00</td>
-      <td>-3.97</td>
-      <td>0.00</td>
-      <td>2026-01-14 18:32:55-05:00</td>
-      <td>0.96</td>
-      <td>4.93</td>
-      <td>419.07</td>
-      <td>10.00</td>
-    </tr>
-    <tr>
-      <td>1.0</td>
-      <td>S00456</td>
-      <td>Yonge Street (north side of Union)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:26:00-05:00</td>
-      <td>-5.97</td>
-      <td>2026-01-14 18:28:41-05:00</td>
-      <td>-3.28</td>
-      <td>2.68</td>
-      <td>2026-01-14 18:32:02-05:00</td>
-      <td>0.08</td>
-      <td>6.04</td>
-      <td>100.36</td>
-      <td>13.88</td>
-    </tr>
-    <tr>
-      <td>802.0</td>
-      <td>S09238</td>
-      <td>Sutherland Drive (east side of Montreal)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:29:00-05:00</td>
-      <td>-2.97</td>
-      <td>2026-01-14 18:29:00-05:00</td>
-      <td>-2.97</td>
-      <td>0.00</td>
-      <td>2026-01-14 18:32:17-05:00</td>
-      <td>0.32</td>
-      <td>3.29</td>
-      <td>24.78</td>
-      <td>12.96</td>
-    </tr>
-    <tr>
-      <td>2.0</td>
-      <td>S00150</td>
-      <td>Joyce Street (north side of Guthrie)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:29:00-05:00</td>
-      <td>-2.97</td>
-      <td>2026-01-14 18:29:00-05:00</td>
-      <td>-2.97</td>
-      <td>0.00</td>
-      <td>2026-01-14 18:34:03-05:00</td>
-      <td>2.10</td>
-      <td>5.06</td>
-      <td>718.46</td>
-      <td>7.77</td>
-    </tr>
-    <tr>
-      <td>16.0</td>
-      <td>S00503</td>
-      <td>Kingston Centre Transfer Point Platform 6</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:29:00-05:00</td>
-      <td>-2.97</td>
-      <td>2026-01-14 18:29:00-05:00</td>
-      <td>-2.97</td>
-      <td>0.00</td>
-      <td>2026-01-14 18:32:05-05:00</td>
-      <td>0.12</td>
-      <td>3.09</td>
-      <td>71.56</td>
-      <td>9.44</td>
-    </tr>
-    <tr>
-      <td>702.0</td>
-      <td>S02060</td>
-      <td>290 Bath Road (south side)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:29:00-05:00</td>
-      <td>-2.97</td>
-      <td>2026-01-14 18:29:23-05:00</td>
-      <td>-2.58</td>
-      <td>0.38</td>
-      <td>2026-01-14 18:32:40-05:00</td>
-      <td>0.71</td>
-      <td>3.68</td>
-      <td>269.55</td>
-      <td>1.11</td>
-    </tr>
-    <tr>
-      <td>4.0</td>
-      <td>S00501</td>
-      <td>Kingston Centre Transfer Point Platform 2</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:30:00-05:00</td>
-      <td>-1.97</td>
-      <td>2026-01-14 18:30:00-05:00</td>
-      <td>-1.97</td>
-      <td>0.00</td>
-      <td>2026-01-14 18:32:16-05:00</td>
-      <td>0.30</td>
-      <td>2.27</td>
-      <td>4.88</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <td>502.0</td>
-      <td>S09015</td>
-      <td>Bayridge Centre (west side of Bayridge)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:30:00-05:00</td>
-      <td>-1.97</td>
-      <td>2026-01-14 18:30:00-05:00</td>
-      <td>-1.97</td>
-      <td>0.00</td>
-      <td>2026-01-14 18:32:18-05:00</td>
+      <td>15</td>
+      <td>S09037</td>
+      <td>Centre 70 Park and Ride (west side of Days)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 11:56:00-05:00</td>
+      <td>-6.6</td>
+      <td>2026-01-15 12:02:56-05:00</td>
       <td>0.33</td>
-      <td>2.30</td>
-      <td>66.94</td>
-      <td>0.00</td>
+      <td>6.93</td>
+      <td>2026-01-15 12:02:39.112482786-05:00</td>
+      <td>0.05</td>
+      <td>6.65</td>
+      <td>226.31</td>
+      <td>14.16</td>
     </tr>
     <tr>
-      <td>1.0</td>
-      <td>S00226</td>
-      <td>Belle Park (east side of Montreal)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:29:00-05:00</td>
-      <td>-2.97</td>
-      <td>2026-01-14 18:30:08-05:00</td>
-      <td>-1.83</td>
-      <td>1.13</td>
-      <td>2026-01-14 18:32:14-05:00</td>
-      <td>0.27</td>
-      <td>3.24</td>
-      <td>163.51</td>
-      <td>12.50</td>
-    </tr>
-    <tr>
-      <td>11.0</td>
-      <td>S00506</td>
-      <td>Kingston Centre Transfer Point Platform 5</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:29:00-05:00</td>
-      <td>-2.97</td>
-      <td>2026-01-14 18:30:22-05:00</td>
-      <td>-1.60</td>
-      <td>1.37</td>
-      <td>2026-01-14 18:32:30-05:00</td>
-      <td>0.53</td>
-      <td>3.50</td>
-      <td>20.47</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <td>15.0</td>
-      <td>S09091</td>
-      <td>Bayridge Drive (south side of Hudson)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:31:00-05:00</td>
-      <td>-0.97</td>
-      <td>2026-01-14 18:31:00-05:00</td>
-      <td>-0.97</td>
-      <td>0.00</td>
-      <td>2026-01-14 18:32:16-05:00</td>
-      <td>0.31</td>
-      <td>1.28</td>
-      <td>123.84</td>
-      <td>10.27</td>
-    </tr>
-    <tr>
-      <td>602.0</td>
-      <td>S09225</td>
-      <td>Barrett Court (east side of Highway 15)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:31:00-05:00</td>
-      <td>-0.97</td>
-      <td>2026-01-14 18:31:00-05:00</td>
-      <td>-0.97</td>
-      <td>0.00</td>
-      <td>2026-01-14 18:33:24-05:00</td>
-      <td>1.44</td>
-      <td>2.40</td>
-      <td>869.48</td>
-      <td>11.11</td>
-    </tr>
-    <tr>
-      <td>801.0</td>
-      <td>S09240</td>
-      <td>Ordnance Street (west side of Montreal)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:31:00-05:00</td>
-      <td>-0.97</td>
-      <td>2026-01-14 18:31:00-05:00</td>
-      <td>-0.97</td>
-      <td>0.00</td>
-      <td>2026-01-14 18:32:44-05:00</td>
-      <td>0.77</td>
-      <td>1.74</td>
-      <td>551.96</td>
-      <td>12.75</td>
-    </tr>
-    <tr>
-      <td>701.0</td>
-      <td>S00292</td>
-      <td>Barrie Street (north side of Brock)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:31:00-05:00</td>
-      <td>-0.97</td>
-      <td>2026-01-14 18:31:00-05:00</td>
-      <td>-0.97</td>
-      <td>0.00</td>
-      <td>2026-01-14 18:32:16-05:00</td>
-      <td>0.31</td>
-      <td>1.28</td>
-      <td>101.79</td>
-      <td>8.61</td>
-    </tr>
-    <tr>
-      <td>7.0</td>
-      <td>S00727</td>
-      <td>93 Grant Timmins Drive (south side)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:30:00-05:00</td>
-      <td>-1.97</td>
-      <td>2026-01-14 18:31:36-05:00</td>
-      <td>-0.37</td>
-      <td>1.60</td>
-      <td>2026-01-14 18:32:18-05:00</td>
-      <td>0.34</td>
-      <td>2.31</td>
-      <td>185.20</td>
+      <td>16</td>
+      <td>S00237</td>
+      <td>Theresa Crescent (north side of Kirkpatrick)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 11:58:00-05:00</td>
+      <td>-4.6</td>
+      <td>2026-01-15 12:03:20-05:00</td>
+      <td>0.73</td>
+      <td>5.33</td>
+      <td>2026-01-15 12:03:07.053060293-05:00</td>
+      <td>0.52</td>
+      <td>5.12</td>
+      <td>232.88</td>
       <td>10.55</td>
     </tr>
     <tr>
-      <td>2.0</td>
+      <td>602</td>
+      <td>S09221</td>
+      <td>McCallum Street (east side of Rose Abbey)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:00:00-05:00</td>
+      <td>-2.6</td>
+      <td>2026-01-15 12:02:29-05:00</td>
+      <td>-0.12</td>
+      <td>2.48</td>
+      <td>2026-01-15 12:02:45.487338781-05:00</td>
+      <td>0.16</td>
+      <td>2.76</td>
+      <td>89.57</td>
+      <td>11.38</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>S02035</td>
+      <td>Downtown Transfer Point Platform 1</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:00:00-05:00</td>
+      <td>-2.6</td>
+      <td>2026-01-15 12:03:26-05:00</td>
+      <td>0.83</td>
+      <td>3.43</td>
+      <td>2026-01-15 12:03:55.159698725-05:00</td>
+      <td>1.32</td>
+      <td>3.92</td>
+      <td>272.71</td>
+      <td>6.94</td>
+    </tr>
+    <tr>
+      <td>15</td>
+      <td>S00682</td>
+      <td>1121 Hudson Drive (south side)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:00:00-05:00</td>
+      <td>-2.6</td>
+      <td>2026-01-15 12:03:05-05:00</td>
+      <td>0.48</td>
+      <td>3.08</td>
+      <td>2026-01-15 12:02:54.979979753-05:00</td>
+      <td>0.32</td>
+      <td>2.92</td>
+      <td>123.69</td>
+      <td>8.88</td>
+    </tr>
+    <tr>
+      <td>502</td>
+      <td>S09015</td>
+      <td>Bayridge Centre (west side of Bayridge)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:00:00-05:00</td>
+      <td>-2.6</td>
+      <td>2026-01-15 12:02:31-05:00</td>
+      <td>-0.08</td>
+      <td>2.52</td>
+      <td>2026-01-15 12:02:53.183029413-05:00</td>
+      <td>0.29</td>
+      <td>2.89</td>
+      <td>11.51</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>S00226</td>
+      <td>Belle Park (east side of Montreal)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:00:00-05:00</td>
+      <td>-2.6</td>
+      <td>2026-01-15 12:02:54-05:00</td>
+      <td>0.30</td>
+      <td>2.90</td>
+      <td>2026-01-15 12:02:52.918836594-05:00</td>
+      <td>0.28</td>
+      <td>2.88</td>
+      <td>59.95</td>
+      <td>11.38</td>
+    </tr>
+    <tr>
+      <td>501</td>
+      <td>S00524</td>
+      <td>Invista (north side of Front)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:00:00-05:00</td>
+      <td>-2.6</td>
+      <td>2026-01-15 12:05:06-05:00</td>
+      <td>2.50</td>
+      <td>5.10</td>
+      <td>2026-01-15 12:04:14.713556051-05:00</td>
+      <td>1.65</td>
+      <td>4.25</td>
+      <td>1320.98</td>
+      <td>9.46</td>
+    </tr>
+    <tr>
+      <td>701</td>
       <td>S00292</td>
       <td>Barrie Street (north side of Brock)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:33:00-05:00</td>
-      <td>1.03</td>
-      <td>2026-01-14 18:31:59-05:00</td>
-      <td>0.02</td>
-      <td>-1.02</td>
-      <td>2026-01-14 18:32:08-05:00</td>
-      <td>0.18</td>
-      <td>-0.86</td>
-      <td>23.69</td>
-      <td>7.77</td>
-    </tr>
-    <tr>
-      <td>10.0</td>
-      <td>S00873</td>
-      <td>Briscoe Street (east side of Sherwood)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:32:00-05:00</td>
-      <td>0.03</td>
-      <td>2026-01-14 18:32:00-05:00</td>
-      <td>0.03</td>
-      <td>0.00</td>
-      <td>2026-01-14 18:32:24-05:00</td>
-      <td>0.44</td>
-      <td>0.41</td>
-      <td>80.75</td>
-      <td>12.50</td>
-    </tr>
-    <tr>
-      <td>16.0</td>
-      <td>S00861</td>
-      <td>Seventh Avenue (west side of Kingscourt)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:32:00-05:00</td>
-      <td>0.03</td>
-      <td>2026-01-14 18:32:00-05:00</td>
-      <td>0.03</td>
-      <td>0.00</td>
-      <td>2026-01-14 18:32:13-05:00</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:01:00-05:00</td>
+      <td>-1.6</td>
+      <td>2026-01-15 12:02:53-05:00</td>
+      <td>0.28</td>
+      <td>1.88</td>
+      <td>2026-01-15 12:02:50.849858999-05:00</td>
       <td>0.25</td>
+      <td>1.85</td>
+      <td>111.10</td>
+      <td>9.44</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>S00746</td>
+      <td>First Canada Avenue (east side of Division)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:01:00-05:00</td>
+      <td>-1.6</td>
+      <td>2026-01-15 12:03:22-05:00</td>
+      <td>0.77</td>
+      <td>2.37</td>
+      <td>2026-01-15 12:03:34.663935661-05:00</td>
+      <td>0.98</td>
+      <td>2.58</td>
+      <td>289.74</td>
+      <td>7.50</td>
+    </tr>
+    <tr>
+      <td>702</td>
+      <td>S02060</td>
+      <td>290 Bath Road (south side)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:01:00-05:00</td>
+      <td>-1.6</td>
+      <td>2026-01-15 12:03:42-05:00</td>
+      <td>1.10</td>
+      <td>2.70</td>
+      <td>2026-01-15 12:03:53.638128042-05:00</td>
+      <td>1.29</td>
+      <td>2.89</td>
+      <td>581.20</td>
+      <td>8.33</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>S00299</td>
+      <td>Earl Street (west side of Bagot)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:01:00-05:00</td>
+      <td>-1.6</td>
+      <td>2026-01-15 12:02:45-05:00</td>
+      <td>0.15</td>
+      <td>1.75</td>
+      <td>2026-01-15 12:02:59.133383036-05:00</td>
+      <td>0.39</td>
+      <td>1.99</td>
+      <td>121.35</td>
+      <td>4.44</td>
+    </tr>
+    <tr>
+      <td>15</td>
+      <td>S00077</td>
+      <td>Loblaws (east side of Midland)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:02:00-05:00</td>
+      <td>-0.6</td>
+      <td>2026-01-15 12:03:44-05:00</td>
+      <td>1.13</td>
+      <td>1.73</td>
+      <td>2026-01-15 12:03:31.471729755-05:00</td>
+      <td>0.92</td>
+      <td>1.52</td>
+      <td>242.32</td>
+      <td>0.27</td>
+    </tr>
+    <tr>
+      <td>701</td>
+      <td>S00745</td>
+      <td>First Canada Avenue (west side of Division)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:02:00-05:00</td>
+      <td>-0.6</td>
+      <td>2026-01-15 12:03:50-05:00</td>
+      <td>1.23</td>
+      <td>1.83</td>
+      <td>2026-01-15 12:03:13.817365646-05:00</td>
+      <td>0.63</td>
+      <td>1.23</td>
+      <td>239.29</td>
+      <td>9.44</td>
+    </tr>
+    <tr>
+      <td>502</td>
+      <td>S00292</td>
+      <td>Barrie Street (north side of Brock)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:02:00-05:00</td>
+      <td>-0.6</td>
+      <td></td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>2026-01-15 12:02:52.350253344-05:00</td>
+      <td>0.27</td>
+      <td>0.87</td>
+      <td>119.34</td>
+      <td>8.61</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>S00556</td>
+      <td>Castell Road (west side of McEwen)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:02:00-05:00</td>
+      <td>-0.6</td>
+      <td>2026-01-15 12:02:25-05:00</td>
+      <td>-0.18</td>
+      <td>0.42</td>
+      <td>2026-01-15 12:02:56.258389472-05:00</td>
+      <td>0.34</td>
+      <td>0.94</td>
+      <td>6.95</td>
+      <td>0.00</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>S00727</td>
+      <td>93 Grant Timmins Drive (south side)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:02:00-05:00</td>
+      <td>-0.6</td>
+      <td></td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>2026-01-15 12:02:59.698571205-05:00</td>
+      <td>0.39</td>
+      <td>0.99</td>
+      <td>33.35</td>
+      <td>1.94</td>
+    </tr>
+    <tr>
+      <td>802</td>
+      <td>S00253</td>
+      <td>Charles Street (east side of Montreal)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:02:00-05:00</td>
+      <td>-0.6</td>
+      <td>2026-01-15 12:03:19-05:00</td>
+      <td>0.72</td>
+      <td>1.32</td>
+      <td>2026-01-15 12:03:15.061352730-05:00</td>
+      <td>0.65</td>
+      <td>1.25</td>
+      <td>533.44</td>
+      <td>11.11</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>S00363</td>
+      <td>800 Princess Street (south side)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:03:00-05:00</td>
+      <td>0.4</td>
+      <td>2026-01-15 12:03:00-05:00</td>
+      <td>0.40</td>
+      <td>0.00</td>
+      <td>2026-01-15 12:03:30.088335752-05:00</td>
+      <td>0.90</td>
+      <td>0.50</td>
+      <td>305.29</td>
+      <td>9.72</td>
+    </tr>
+    <tr>
+      <td>702</td>
+      <td>S00616</td>
+      <td>Arlington Park Place (west side of Gardiners)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:03:00-05:00</td>
+      <td>0.4</td>
+      <td>2026-01-15 12:04:25-05:00</td>
+      <td>1.82</td>
+      <td>1.42</td>
+      <td>2026-01-15 12:04:50.214316368-05:00</td>
+      <td>2.24</td>
+      <td>1.84</td>
+      <td>689.06</td>
+      <td>0.55</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>S00458</td>
+      <td>McDonald Avenue (north side of King)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:03:00-05:00</td>
+      <td>0.4</td>
+      <td>2026-01-15 12:02:58-05:00</td>
+      <td>0.37</td>
+      <td>-0.03</td>
+      <td>2026-01-15 12:03:12.422881126-05:00</td>
+      <td>0.61</td>
+      <td>0.21</td>
+      <td>162.05</td>
+      <td>4.93</td>
+    </tr>
+    <tr>
+      <td>16</td>
+      <td>S00367</td>
+      <td>Leroy Grant Drive (south side of Concession)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:03:00-05:00</td>
+      <td>0.4</td>
+      <td>2026-01-15 12:03:13-05:00</td>
+      <td>0.62</td>
       <td>0.22</td>
-      <td>128.55</td>
-      <td>8.05</td>
+      <td>2026-01-15 12:03:59.501838923-05:00</td>
+      <td>1.39</td>
+      <td>0.99</td>
+      <td>403.99</td>
+      <td>6.94</td>
     </tr>
     <tr>
-      <td>7.0</td>
-      <td>S02081</td>
-      <td>Cataraqui Centre Transfer Point Platform 4</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:30:00-05:00</td>
-      <td>-1.97</td>
-      <td>NaT</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>2026-01-14 18:32:27-05:00</td>
-      <td>0.50</td>
-      <td>2.46</td>
-      <td>2.39</td>
+      <td>7</td>
+      <td>S00744</td>
+      <td>2485 Princess Street (south side)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:03:00-05:00</td>
+      <td>0.4</td>
+      <td>2026-01-15 12:04:40-05:00</td>
+      <td>2.07</td>
+      <td>1.67</td>
+      <td>2026-01-15 12:04:01.269969463-05:00</td>
+      <td>1.42</td>
+      <td>1.02</td>
+      <td>611.17</td>
       <td>0.00</td>
     </tr>
     <tr>
-      <td>22.0</td>
-      <td>S02080</td>
-      <td>Innovation Drive at Highway 15 (north side)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:35:00-05:00</td>
-      <td>3.03</td>
-      <td>NaT</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>2026-01-14 18:32:27-05:00</td>
-      <td>0.50</td>
-      <td>-2.54</td>
-      <td>9.95</td>
-      <td>0.00</td>
+      <td>12</td>
+      <td>S00436</td>
+      <td>Beverley Street (south side of Union)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:04:00-05:00</td>
+      <td>1.4</td>
+      <td>2026-01-15 12:02:53-05:00</td>
+      <td>0.28</td>
+      <td>-1.12</td>
+      <td>2026-01-15 12:03:18.574917078-05:00</td>
+      <td>0.71</td>
+      <td>-0.69</td>
+      <td>275.65</td>
+      <td>8.33</td>
     </tr>
     <tr>
-      <td>1.0</td>
-      <td>S02070</td>
-      <td>St. Lawrence College Transfer Point</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:35:00-05:00</td>
-      <td>3.03</td>
-      <td>NaT</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>2026-01-14 18:32:27-05:00</td>
-      <td>0.50</td>
-      <td>-2.54</td>
-      <td>30.70</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <td>15.0</td>
-      <td>S02083</td>
-      <td>Cataraqui Centre Transfer Point Platform 6</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:30:00-05:00</td>
-      <td>-1.97</td>
-      <td>NaT</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>2026-01-14 18:32:27-05:00</td>
-      <td>0.50</td>
-      <td>2.46</td>
-      <td>3.39</td>
-      <td>0.00</td>
-    </tr>
-    <tr>
-      <td>601.0</td>
-      <td>S02080</td>
-      <td>Innovation Drive at Highway 15 (north side)</td>
-      <td>2026-01-14 18:31:58-05:00</td>
-      <td>2026-01-14 18:37:00-05:00</td>
-      <td>5.03</td>
-      <td>NaT</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>2026-01-14 18:32:27-05:00</td>
-      <td>0.50</td>
-      <td>-4.54</td>
-      <td>10.23</td>
-      <td>0.00</td>
+      <td>11</td>
+      <td>S00111</td>
+      <td>257 Bath Road (north side)</td>
+      <td>2026-01-15 12:02:36-05:00</td>
+      <td>2026-01-15 12:04:00-05:00</td>
+      <td>1.4</td>
+      <td>2026-01-15 12:04:12-05:00</td>
+      <td>1.60</td>
+      <td>0.20</td>
+      <td>2026-01-15 12:03:53.982457876-05:00</td>
+      <td>1.30</td>
+      <td>-0.10</td>
+      <td>500.73</td>
+      <td>6.66</td>
     </tr>
   </tbody>
 </table>
-</body>
-</html>
+    <p class="note">
+      Notes:
+      <br/>• sched_eta_min / rt_eta_min / ai_eta_min are “minutes from snapshot until arrival” (negative means it was scheduled/predicted in the past).
+      <br/>• rt_delay / ai_delay are “minutes late vs schedule” (negative means early).
+    </p>
+    </body></html>
