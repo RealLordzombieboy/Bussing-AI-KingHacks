@@ -1,0 +1,172 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Kingston Transit – Live AI vs RT</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+  </script>
+
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; }
+    #map { height: 100vh; }
+    .hud {
+      position: absolute; z-index: 999;
+      top: 10px; left: 10px;
+      background: rgba(255,255,255,0.95);
+      padding: 10px 12px;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      max-width: 380px;
+      font-size: 14px;
+    }
+    .small { color:#666; font-size: 12px; }
+    .popup {
+      min-width: 240px;
+      line-height: 1.25;
+    }
+    .popup .title {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .popup .stop {
+      margin-bottom: 8px;
+    }
+    .popup .row {
+      margin: 2px 0;
+    }
+    .popup .muted {
+      color: #666;
+      font-size: 12px;
+      margin-top: 6px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 999px;
+      background: #f1f1f1;
+      font-size: 12px;
+      margin-left: 6px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="hud" id="hud">
+    <b>Live AI vs Official RT</b><br/>
+    <span class="small" id="meta">Loading…</span>
+  </div>
+  <div id="map"></div>
+
+  <script>
+    const map = L.map('map').setView([44.2312, -76.4860], 12); // Kingston-ish
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let layer = L.layerGroup().addTo(map);
+
+    function colorForDelay(aiDelay) {
+      if (aiDelay == null || isNaN(aiDelay)) return "gray";
+      if (aiDelay < 1) return "green";
+      if (aiDelay < 5) return "orange";
+      return "red";
+    }
+
+    function safeStr(x, fallback="—") {
+      if (x === null || x === undefined || x === "" || x === "NaT") return fallback;
+      return String(x);
+    }
+
+    function fmtDelay(d) {
+      if (d === null || d === undefined || isNaN(d)) return null;
+      const sign = (d >= 0) ? "+" : "";
+      return `${sign}${d.toFixed(1)}m`;
+    }
+
+    function popupHTML(m) {
+      const route = safeStr(m.route_id, "—");
+      const vehicle = safeStr(m.vehicle_id, "");
+      const stopName = safeStr(m.stop_name, "");
+      const stopId = safeStr(m.stop_id, "");
+
+      // Prefer the prebuilt labels from live_api/delay_comparison
+      const rtLabel = m.rt_label ? m.rt_label : null;
+      const aiLabel = m.ai_label ? m.ai_label : null;
+
+      // fallback if labels missing
+      const rtDelay = fmtDelay(m.rt_delay);
+      const aiDelay = fmtDelay(m.ai_delay);
+
+      const rtLine = rtLabel
+        ? `RT: <b>${rtLabel}</b>`
+        : (rtDelay ? `RT: <b>— (${rtDelay})</b>` : `RT: <b>—</b>`);
+
+      const aiLine = aiLabel
+        ? `AI: <b>${aiLabel}</b>`
+        : (aiDelay ? `AI: <b>— (${aiDelay})</b>` : `AI: <b>—</b>`);
+
+      const sched = safeStr(m.sched_hhmm || m.sched_time, null);
+
+      return `
+        <div class="popup">
+          <div class="title">
+            Route ${route}
+            ${vehicle ? `<span class="pill">Bus ${vehicle}</span>` : ``}
+          </div>
+
+          <div class="stop">
+            <b>Next stop:</b> ${stopName} ${stopId ? `(${stopId})` : ``}
+          </div>
+
+          <div class="row">${rtLine}</div>
+          <div class="row">${aiLine}</div>
+
+          ${sched ? `<div class="muted">Scheduled: ${sched}</div>` : ``}
+        </div>
+      `;
+    }
+
+    async function refresh() {
+      try {
+        const res = await fetch("live_map.json?t=" + Date.now());
+        const data = await res.json();
+
+        const meta = data.meta || {};
+        document.getElementById("meta").innerText =
+          `snapshot: ${meta.snapshot_local || "?"} | match: ${((meta.match_rate||0)*100).toFixed(1)}%`;
+
+        layer.clearLayers();
+
+        (data.markers || []).forEach(m => {
+          const c = colorForDelay(m.ai_delay);
+
+          const marker = L.circleMarker([m.lat, m.lon], {
+            radius: 7,
+            weight: 2,
+            color: c,
+            fillOpacity: 0.85
+          });
+
+          marker.bindPopup(popupHTML(m));
+          marker.addTo(layer);
+        });
+
+      } catch (e) {
+        document.getElementById("meta").innerText = "Error loading live_map.json";
+        console.error(e);
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>
